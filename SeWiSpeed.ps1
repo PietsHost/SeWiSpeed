@@ -294,7 +294,8 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                             foreach ($Point in $AnalyzerData)
                             {
                                 $SyncHash.Chart.Series['Bandbreite (MBit/s)'].Points.AddXY($Point.Interval, $Point.Bandwidth)
-								$SyncHash.label1.Text = $Point.Bandwidth
+								#$SyncHash.label1.Text = $Point.Bandwidth
+								$SyncHash.label1.Content = $Point.Bandwidth
                                 $SyncHash.Chart.Series['Transfer (MBytes)'].Points.AddXY($Point.Interval, $Point.Transfer)
                             }
                         }
@@ -395,7 +396,7 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
         xmlns:wf="clrnamespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:wfi="clr-namespace:System.Windows.Forms;assembly=WindowsFormsIntegration"
         mc:Ignorable="d"
-        Title="SeWiSpeed v2.2.0" Height="772" Width="670">
+        Title="SeWiSpeed v2.2.1" Height="772" Width="670">
     <Grid>
         <GroupBox x:Name="CsvFileGroupBox" Header="CSV Datei" Height="65" Margin="10,10,10,0" VerticalAlignment="Top">
             <Grid Margin="0">
@@ -404,7 +405,7 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
             </Grid>
         </GroupBox>
         <RichTextBox x:Name="IperfJobOutputTextBox" Margin="10,0,138,10" VerticalScrollBarVisibility="Auto" Height="52" VerticalAlignment="Bottom"/>
-        <GroupBox x:Name="iPerfGroupBox" Header="iPerf" Height="145" Margin="10,80,10,0" VerticalAlignment="Top">
+        <GroupBox x:Name="iPerfGroupBox" Header="Einstellungen" Height="145" Margin="10,80,10,0" VerticalAlignment="Top">
             <Grid Margin="0">
                 <GroupBox x:Name="SRVGroupBox" Header="Server" Height="82" Margin="275,0,10,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="110">
                     <Grid Margin="0">
@@ -426,7 +427,7 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                 <TextBox x:Name="IpTextBox" HorizontalAlignment="Left" Margin="155,10,0,0" TextWrapping="Wrap" Width="97" Height="23" VerticalAlignment="Top"/>
                 <Label x:Name="TimeLabel" Content="Dauer in Sekunden" HorizontalAlignment="Left" Margin="100,35,0,0" Width="113" Target="{Binding ElementName=TimeTextBox, Mode=OneWay}" Height="23" VerticalAlignment="Top" ToolTip="Gesamte Testdauer in Sekunden"/>
                 <TextBox x:Name="TimeTextBox" HorizontalAlignment="Left" Margin="213,38,0,0" TextWrapping="Wrap" Width="39" Height="23" VerticalAlignment="Top"/>
-                <GroupBox x:Name="VersionGroupBox" Header="Test-Version" Height="82" Margin="394,00,115,20" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100">
+                <GroupBox x:Name="VersionGroupBox" Header="Version" Height="82" Margin="394,00,115,20" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100">
                     <Grid Margin="0">
                         <RadioButton x:Name="Version3Radio" Content="Aktuell" HorizontalAlignment="Left" Margin="10,40,0,0" VerticalAlignment="Top" IsChecked="True" ToolTip="iPerf3 3.1.3"/>
                         <RadioButton x:Name="Version2Radio" Content="Vorherige" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" ToolTip="iPerf 2.0.9"/>
@@ -434,10 +435,10 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                 </GroupBox>
             </Grid>
         </GroupBox>
-        <GroupBox x:Name="Data" Header="Daten" Height="60" Margin="0,660,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="102">
+        <GroupBox x:Name="Data" Header="Bandbreite" Height="60" Margin="0,663,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="102">
             <Grid Margin="2,22,-2,-22">
-                <TextBox x:Name="label1" Height="29" Width="52" TextWrapping="Wrap" HorizontalAlignment="Left" Margin="3,-14,0,0" VerticalAlignment="Top" BorderThickness="0" Foreground="Red" FontSize="14" FontWeight="Bold" IsReadOnly="True" IsEnabled="False" />
-                <Label x:Name="label" Content="MBit/s" HorizontalAlignment="Left" Margin="31,-19,-27,0" VerticalAlignment="Top" Height="27" Width="86" FontSize="14" FontWeight="Bold" ToolTip="Aktuelle Bandbreite"/>
+                <Label x:Name="label1" Height="29" Width="52" Content="0" HorizontalAlignment="Left" Margin="0,-19,0,0" VerticalAlignment="Top" Foreground="Red" FontSize="14" FontWeight="Bold" />
+				<Label x:Name="label" Content="MBit/s" HorizontalAlignment="Left" Margin="31,-19,-27,0" VerticalAlignment="Top" Height="27" Width="86" FontSize="14" FontWeight="Bold" ToolTip="Aktuelle Bandbreite"/>
             </Grid>
         </GroupBox>
 
@@ -500,7 +501,8 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
         })
 
         $SyncHash.TimeTextBox.Text = 15
-		$SyncHash.label1.Text = 0
+		#$SyncHash.label1.Text = 0
+		$SyncHash.label1.Content = 0
 
         $SyncHash.IpTextBox.add_TextChanged({
                 Set-IperfCommand
@@ -553,7 +555,7 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
 
         Set-IperfCommand
 
-        Write-Status -Text 'SeWiSpeed v2.2.0 - Copyright: Patrick Hachmeyer' -Colore 'Blue'
+        Write-Status -Text 'SeWiSpeed v2.2.1 - Copyright: Patrick Hachmeyer' -Colore 'Blue'
 
         # Shows the form
         $null = $SyncHash.Form.ShowDialog()
