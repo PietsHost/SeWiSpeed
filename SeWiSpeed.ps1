@@ -23,9 +23,7 @@ $UiRunspace.SessionStateProxy.SetVariable('syncHash',$SyncHash)
 # UI Script
 $UiPowerShell = [PowerShell]::Create().AddScript(
     {
-        #$SyncHash.host.ui.WriteVerboseLine(' UI Script Started')
-        #trap {$SyncHash.host.ui.WriteErrorLine("$_`nError was in Line {0}`n{1}" -f ($_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.Line))}
-
+        
         function Write-Status
         {
         [CmdletBinding()]
@@ -53,17 +51,13 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
         function Start-Iperf
         {
 		Stop-Analyzer
-            #$SyncHash.host.ui.WriteVerboseLine('iPerf starten')
+		
             if ($SyncHash.IperfJobMonitorRunspace.RunspaceStateInfo.State -eq 'Opened')
             {
                 Write-Status -Text 'SeWiSpeed ist bereits gestartet!' -Colore 'Orange'
             }
             else
             {
-				
-                #Get-Job | Remove-Job -Force
-                #$SyncHash.Remove('IperfJob')
-
                 # Iperf Job Monitor with Register-ObjectEvent in Runspace
                 $InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
                 $InitialSessionState.Commands.Add((New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry -ArgumentList 'Stop-Iperf', (Get-Content Function:\Stop-Iperf)))
@@ -79,10 +73,6 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                 $SyncHash.IperfJobMonitorRunspace.SessionStateProxy.SetVariable('IperfExe',$IperfExe)
 				$SyncHash.IperfJobMonitorPowerShell = [PowerShell]::Create().AddScript(
                     {
-                        #trap {$SyncHash.host.ui.WriteErrorLine("$_`nError was in Line {0}`n{1}" -f ($_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.Line))}
-                        #trap [System.Management.Automation.PipelineStoppedException] {$SyncHash.host.ui.WriteVerboseLine($_)}
-                        
-                        #$SyncHash.host.ui.WriteVerboseLine('Start-Iperf Running')
                         Set-Location -Path $SyncHash.IperfFolder
 
 					try
@@ -98,8 +88,8 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                             else
                             {
                                 Set-Content -Path $CsvFilePath -Value $null
-                                #Write-Status -Text ((Invoke-Expression -Command "$IperfExe -v") -join ' ') -Colore 'Blue'
-                                Invoke-Expression -Command $Command
+                                
+								Invoke-Expression -Command $Command
 
                                 if ($ErrorOut = Get-Content -Tail 5 -Path $CsvFilePath | Select-String -Pattern 'iperf3: error')
                                 {
@@ -110,24 +100,23 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                         catch
                         {
                             Write-Status -Text $_ -Colore 'Red'
+							Stop-Analyzer
                             Stop-Iperf
                         }
                         $ErrorActionPreference = $ErrorActionPreferenceOrg
                         Write-Status -Text 'SeWiSpeed erfolgreich beendet' -Colore 'Green'
+						Stop-Analyzer
                         Stop-Iperf
-
-                        #Get-EventSubscriber | Unregister-Event
-                        #$SyncHash.Remove('IperfJobMonitor')
-                    })
+                        
+						})
 					
-					#$SyncHash.host.ui.WriteVerboseLine('Start-Analyzer')
+			
             if (!(Test-Path -Path $SyncHash.CsvFilePathTextBox.Text))
             {
                 Write-Status -Text 'CSV nicht gefunden. Bitte nochmal auf Start klicken' -Colore 'Red'
             }
             elseif ($SyncHash.AnalyzerRunspace.RunspaceStateInfo.State -eq 'Opened')
             {
-                Write-Status -Text 'Analyzer Already Running' -Colore 'Orange'
             }
             else
             {
@@ -157,53 +146,27 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
 
         function Stop-Iperf
         {
-            #$SyncHash.host.ui.WriteVerboseLine('Stop-Iperf')
 			Write-Status -Text 'SeWiSpeed gestoppt!' -Colore 'Red'
+			Stop-Analyzer
 			
 			if ($SyncHash.AnalyzerRunspace.RunspaceStateInfo.State -eq 'Opened')
             {
-                #$SyncHash.host.ui.WriteVerboseLine('Stop-Analyzer Running')
                 $SyncHash.AnalyzerRunspace.Close()
                 $SyncHash.AnalyzerPowerShell.Dispose()
             }
 			
-			
             if ($SyncHash.IperfJobMonitorRunspace.RunspaceStateInfo.State -eq 'Opened')
             {
-                #$SyncHash.host.ui.WriteVerboseLine('Stop-Iperf Running')
-                #$SyncHash.IperfJobMonitorPowerShell.EndInvoke($SyncHash.IperfJobMonitorHandle)
                 $SyncHash.IperfJobMonitorRunspace.Close()
                 $SyncHash.IperfJobMonitorPowerShell.Dispose()
-            }
-			#$SyncHash.host.ui.WriteVerboseLine('Stop-Analyzer')
-            
+            }			           
         }
 
-        #function Start-Analyzer
-        #{
-        #    $SyncHash.host.ui.WriteVerboseLine('Start-Analyzer')
-        #   if (!(Test-Path -Path $SyncHash.CsvFilePathTextBox.Text))
-        #    {
-        #        Write-Status -Text 'File not found' -Colore 'Red'
-        #    }
-        #    elseif ($SyncHash.AnalyzerRunspace.RunspaceStateInfo.State -eq 'Opened')
-        #    {
-        #        Write-Status -Text 'Analyzer Already Running' -Colore 'Orange'
-        #    }
-        #    else
-        #    {
-        #        #analyser =================
-        #    }
-			
-        #}
 		
         # Analyzer Runspace Script
         $AnalyzerScript = 
         {
-            #$SyncHash.host.ui.WriteVerboseLine('Start-Analyzer Running')
-            #trap {$SyncHash.host.ui.WriteErrorLine("$_`nError was in Line {0}`n{1}" -f ($_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.Line))}
-            #trap [System.Management.Automation.PipelineStoppedException] {$SyncHash.host.ui.WriteVerboseLine($_)}
-
+            
             $First  = $true
             $Header = $null
             $AnalyzerDataLength = 0
@@ -211,13 +174,11 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
             $ChartDataAction0 = [Action]{
                 $SyncHash.Chart.Series['Bandbreite (Mbits/sek)'].Points.Clear()
                 $SyncHash.Chart.Series['Transfer (MBytes)'].Points.Clear()
-                #$SyncHash.host.ui.WriteVerboseLine('Clear Data: ' + ($SyncHash.Chart.Series['Transfer (MBytes)'].Points.Count | Out-String))
             }
             $SyncHash.Chart.Invoke($ChartDataAction0)
 
             Get-Content -Path $CsvFilePath -ReadCount 0 -Wait | ForEach-Object {
                 trap {$SyncHash.host.ui.WriteErrorLine("$_`nError was in Line {0}`n{1}" -f ($_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.Line))}
-                #$SyncHash.host.ui.WriteVerboseLine('Loop Data: ' + ($_ | Out-String)) ###
                 $AnalyzerData = New-Object -TypeName System.Collections.Generic.List[System.Object]
 
                 if ($IperfVersion -eq 2)
@@ -249,7 +210,6 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                             }   
                             else  
                             {
-                                #$SyncHash.host.ui.WriteVerboseLine('Remove Total Line: ' + $CsvLine.Time)
                             }
                         }
                     }
@@ -257,7 +217,7 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                 else
                 {
                     $Csv = $_ | Where-Object {$_ -match '\[...\]'}
-                    #$Csv = $a | Select-String -Pattern '\[...\]'
+					
                     foreach ($Line in $Csv)
                     {
                         $Line = $Line -replace '[][]'
@@ -308,7 +268,6 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
 
                 if ($AnalyzerData.Count -gt $LastX -and $LastX -gt 0)
                 {
-                    #$SyncHash.host.ui.WriteVerboseLine('Trim Data 1')
                     $AnalyzerData = $AnalyzerData.GetRange($AnalyzerData.Count - $LastX, $LastX)
                 }
                 $SyncHash.host.ui.WriteVerboseLine('New Points: ' + $AnalyzerData.Count)
@@ -318,9 +277,8 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                     if ($AnalyzerDataLength -eq 0 -and $AnalyzerData.Count -gt 1)
                     {
                         $ChartDataAction1 = [Action]{
-                            $SyncHash.Chart.Series['Bandbreite (Mbits/sec)'].Points.DataBindXY($AnalyzerData.Interval, $AnalyzerData.Bandwidth)
+                            $SyncHash.Chart.Series['Bandbreite (MBit/s)'].Points.DataBindXY($AnalyzerData.Interval, $AnalyzerData.Bandwidth)
                             $SyncHash.Chart.Series['Transfer (MBytes)'].Points.DataBindXY($AnalyzerData.Interval, $AnalyzerData.Transfer)
-                            #$SyncHash.host.ui.WriteVerboseLine('Show Data: ' + ($SyncHash.Chart.Series['Transfer (MBytes)'].Points.Count | Out-String))
                         }
                         $SyncHash.Chart.Invoke($ChartDataAction1)
                     }
@@ -329,26 +287,26 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                         $ChartDataAction2 = [Action]{
                             while ($AnalyzerDataLength + $AnalyzerData.Count -gt $LastX -and $LastX -gt 0)
                             {
-                                $SyncHash.Chart.Series['Bandbreite (Mbits/sec)'].Points.RemoveAt(0)
+                                $SyncHash.Chart.Series['Bandbreite (MBit/s)'].Points.RemoveAt(0)
                                 $SyncHash.Chart.Series['Transfer (MBytes)'].Points.RemoveAt(0)
                                 $Global:AnalyzerDataLength --
                             }
                             foreach ($Point in $AnalyzerData)
                             {
-                                $SyncHash.Chart.Series['Bandbreite (Mbits/sec)'].Points.AddXY($Point.Interval, $Point.Bandwidth)
+                                $SyncHash.Chart.Series['Bandbreite (MBit/s)'].Points.AddXY($Point.Interval, $Point.Bandwidth)
+								$SyncHash.label1.Text = $Point.Bandwidth
                                 $SyncHash.Chart.Series['Transfer (MBytes)'].Points.AddXY($Point.Interval, $Point.Transfer)
-                                #$SyncHash.host.ui.WriteVerboseLine('Add Data Point: ' + ($SyncHash.Chart.Series['Transfer (MBytes)'].Points.Count | Out-String))
                             }
                         }
                         $SyncHash.Chart.Invoke($ChartDataAction2)
                     }
                     $AnalyzerDataLength += $AnalyzerData.Count
+					 
+					
                 }
                 else
                 {
-                    #$SyncHash.host.ui.WriteVerboseLine('Point Skipped')
                 }
-                #$SyncHash.host.ui.WriteVerboseLine('Analyzer Loop End: ' + ($AnalyzerDataLength | Out-String))
             }
         }
 
@@ -356,8 +314,6 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
         {
             if ($SyncHash.IperfJobMonitorRunspace.RunspaceStateInfo.State -eq 'Opened')
             {
-                #$SyncHash.host.ui.WriteVerboseLine('Stop-Iperf Running')
-                #$SyncHash.IperfJobMonitorPowerShell.EndInvoke($SyncHash.IperfJobMonitorHandle)
                 $SyncHash.IperfJobMonitorRunspace.Close()
                 $SyncHash.IperfJobMonitorPowerShell.Dispose()
             }
@@ -426,6 +382,8 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
             $SyncHash.CommandTextBox.Text = $IperfExe + $IperfMode + $IperfTime + $IperfVersionParams + ' -i 1'
         }
 
+		
+		
         # UI
         $InputXml = @"
 <Window x:Class="SeWiSpeed.MainWindow"
@@ -437,18 +395,18 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
         xmlns:wf="clrnamespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:wfi="clr-namespace:System.Windows.Forms;assembly=WindowsFormsIntegration"
         mc:Ignorable="d"
-        Title="SeWiSpeed v2.1.0 beta3" Height="680" Width="670">
+        Title="SeWiSpeed v2.2.0" Height="772" Width="670">
     <Grid>
         <GroupBox x:Name="CsvFileGroupBox" Header="CSV Datei" Height="65" Margin="10,10,10,0" VerticalAlignment="Top">
             <Grid Margin="0">
-                <Button x:Name="CsvFilePathButton" Content="_Browse" HorizontalAlignment="Left" Margin="10,0,0,0" Width="75" Height="20" VerticalAlignment="Center"/>
+                <Button x:Name="CsvFilePathButton" Content="_Browse" HorizontalAlignment="Left" Margin="10,0,0,0" Width="75" Height="20" VerticalAlignment="Center" ToolTip="Geben Sie den Pfad zu einer .csv-Datei hier an."/>
                 <TextBox x:Name="CsvFilePathTextBox" Margin="90,9,10,9" TextWrapping="Wrap" Text="CSV Datei" Height="20" VerticalAlignment="Center"/>
             </Grid>
         </GroupBox>
-        <RichTextBox x:Name="IperfJobOutputTextBox" Margin="10,0,10,10" VerticalScrollBarVisibility="Auto" Height="52" VerticalAlignment="Bottom"/>
+        <RichTextBox x:Name="IperfJobOutputTextBox" Margin="10,0,138,10" VerticalScrollBarVisibility="Auto" Height="52" VerticalAlignment="Bottom"/>
         <GroupBox x:Name="iPerfGroupBox" Header="iPerf" Height="145" Margin="10,80,10,0" VerticalAlignment="Top">
             <Grid Margin="0">
-			<GroupBox x:Name="SRVGroupBox" Header="Server" Height="82" Margin="275,0,10,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="110">
+                <GroupBox x:Name="SRVGroupBox" Header="Server" Height="82" Margin="275,0,10,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="110">
                     <Grid Margin="0">
                         <RadioButton x:Name="Server1Radio" Content="Server 1" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" IsChecked="True"/>
                         <RadioButton x:Name="Server2Radio" Content="Server 2" HorizontalAlignment="Left" Margin="10,40,0,0" VerticalAlignment="Top"/>
@@ -460,28 +418,34 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                         <RadioButton x:Name="ServerRadio" Content="Upload" HorizontalAlignment="Left" Margin="10,40,0,0" VerticalAlignment="Top"/>
                     </Grid>
                 </GroupBox>
-                <Label x:Name="CommandLabel" Content="_Befehl" HorizontalAlignment="Left" Height="25" Margin="25,0,0,8" VerticalAlignment="Bottom" Width="68" Target="{Binding ElementName=CommandTextBox, Mode=OneWay}"/>
-                <TextBox x:Name="CommandTextBox" Margin="83,0,10,10" TextWrapping="Wrap" Height="23" VerticalAlignment="Bottom"/>
-                <Button x:Name="StartIperfButton" Content="Start" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75"/>
-                <Button x:Name="StopIperfButton" Content="Stop" HorizontalAlignment="Left" Margin="10,35,0,0" VerticalAlignment="Top" Width="75"/>
-                <Label x:Name="IpLabel" Content="IP" HorizontalAlignment="Left" Margin="100,10,0,0" Width="20" Target="{Binding ElementName=IpTextBox, Mode=OneWay}" Height="23" VerticalAlignment="Top"/>
+                <Label x:Name="CommandLabel" Content="_Befehl" HorizontalAlignment="Left" Height="25" Margin="26,0,0,10" VerticalAlignment="Bottom" Width="68" Target="{Binding ElementName=CommandTextBox, Mode=OneWay}"/>
+                <TextBox x:Name="CommandTextBox" Margin="83,0,10,10" TextWrapping="Wrap" Height="22" VerticalAlignment="Bottom" FontSize="10"/>
+                <Button x:Name="StartIperfButton" Content="Start" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" Background="#FF48C700"/>
+                <Button x:Name="StopIperfButton" Content="Stop" HorizontalAlignment="Left" Margin="10,35,0,0" VerticalAlignment="Top" Width="75" Background="#FFF35555"/>
+                <Label x:Name="IpLabel" Content="IP" HorizontalAlignment="Left" Margin="100,8,0,0" Width="20" Target="{Binding ElementName=IpTextBox, Mode=OneWay}" Height="23" VerticalAlignment="Top"/>
                 <TextBox x:Name="IpTextBox" HorizontalAlignment="Left" Margin="155,10,0,0" TextWrapping="Wrap" Width="97" Height="23" VerticalAlignment="Top"/>
-                <Label x:Name="TimeLabel" Content="Dauer in Sek." HorizontalAlignment="Left" Margin="100,38,0,0" Width="80" Target="{Binding ElementName=TimeTextBox, Mode=OneWay}" Height="23" VerticalAlignment="Top"/>
-                <TextBox x:Name="TimeTextBox" HorizontalAlignment="Left" Margin="205,38,0,0" TextWrapping="Wrap" Width="47" Height="23" VerticalAlignment="Top"/>
-                <GroupBox x:Name="VersionGroupBox" Header="iPerf Version" Height="82" Margin="394,00,115,20" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100">
+                <Label x:Name="TimeLabel" Content="Dauer in Sekunden" HorizontalAlignment="Left" Margin="100,35,0,0" Width="113" Target="{Binding ElementName=TimeTextBox, Mode=OneWay}" Height="23" VerticalAlignment="Top" ToolTip="Gesamte Testdauer in Sekunden"/>
+                <TextBox x:Name="TimeTextBox" HorizontalAlignment="Left" Margin="213,38,0,0" TextWrapping="Wrap" Width="39" Height="23" VerticalAlignment="Top"/>
+                <GroupBox x:Name="VersionGroupBox" Header="Test-Version" Height="82" Margin="394,00,115,20" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100">
                     <Grid Margin="0">
-                        <RadioButton x:Name="Version3Radio" Content="Aktuell" HorizontalAlignment="Left" Margin="10,40,0,0" VerticalAlignment="Top" IsChecked="True"/>
-						<RadioButton x:Name="Version2Radio" Content="Vorherige" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+                        <RadioButton x:Name="Version3Radio" Content="Aktuell" HorizontalAlignment="Left" Margin="10,40,0,0" VerticalAlignment="Top" IsChecked="True" ToolTip="iPerf3 3.1.3"/>
+                        <RadioButton x:Name="Version2Radio" Content="Vorherige" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" ToolTip="iPerf 2.0.9"/>
                     </Grid>
                 </GroupBox>
             </Grid>
         </GroupBox>
-        
-        <WindowsFormsHost x:Name="FormWfa" Margin="10,230,10,67"/>
+        <GroupBox x:Name="Data" Header="Daten" Height="60" Margin="0,660,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="102">
+            <Grid Margin="2,22,-2,-22">
+                <TextBox x:Name="label1" Height="29" Width="52" TextWrapping="Wrap" HorizontalAlignment="Left" Margin="3,-14,0,0" VerticalAlignment="Top" BorderThickness="0" Foreground="Red" FontSize="14" FontWeight="Bold" IsReadOnly="True" IsEnabled="False" />
+                <Label x:Name="label" Content="MBit/s" HorizontalAlignment="Left" Margin="31,-19,-27,0" VerticalAlignment="Top" Height="27" Width="86" FontSize="14" FontWeight="Bold" ToolTip="Aktuelle Bandbreite"/>
+            </Grid>
+        </GroupBox>
+
+<WindowsFormsHost x:Name="FormWfa" Margin="10,230,10,67"/>
     </Grid>
 </Window>
 "@
-        
+
         $InputXml = $InputXml -replace 'mc:Ignorable="d"', '' -replace 'x:N', 'N' -replace '^<Win.*', '<Window'
                  
         [void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
@@ -495,13 +459,11 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
         }
         catch
         {
-            #$SyncHash.host.ui.WriteErrorLine('Unable to load Windows.Markup.XamlReader. Double-check syntax and ensure .net is installed.')
         }
         
         # Load XAML Objects In PowerShell
         $Xaml.SelectNodes('//*[@Name]') | ForEach-Object -Process {
             $SyncHash.Add($_.Name,$SyncHash.Form.FindName($_.Name))
-            #Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)
         }
         
         #Get-Variable WPF*
@@ -516,22 +478,18 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
         $SyncHash.ChartArea = New-Object -TypeName System.Windows.Forms.DataVisualization.Charting.ChartArea
         $SyncHash.Chart.ChartAreas.Add($SyncHash.ChartArea)
 
-        [void]$SyncHash.Chart.Series.Add('Bandbreite (Mbits/sec)')
+        [void]$SyncHash.Chart.Series.Add('Bandbreite (MBit/s)')
         [void]$SyncHash.Chart.Series.Add('Transfer (MBytes)')
 
         # Display the chart on a form
-        #$SyncHash.Chart.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Right -bor [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Left
-        #$SyncHash.Chart.Location = New-Object -TypeName System.Drawing.Size -ArgumentList (0, 100)
-        $SyncHash.Chart.BackColor = [System.Drawing.Color]::Transparent
-        $SyncHash.Chart.Series['Bandbreite (Mbits/sec)'].ChartType = [System.Windows.Forms.DataVisualization.Charting.SeriesChartType]::'Line'
+		$SyncHash.Chart.BackColor = [System.Drawing.Color]::Transparent
+        $SyncHash.Chart.Series['Bandbreite (MBit/s)'].ChartType = [System.Windows.Forms.DataVisualization.Charting.SeriesChartType]::'Line'
         $SyncHash.Chart.Series['Transfer (MBytes)'].ChartType = [System.Windows.Forms.DataVisualization.Charting.SeriesChartType]::'Line'
-        $SyncHash.Chart.Width = 800
+        $SyncHash.Chart.Width = 798
         $SyncHash.ChartLegend = New-Object -TypeName System.Windows.Forms.DataVisualization.Charting.Legend
         [void]$SyncHash.Chart.Legends.Add($SyncHash.ChartLegend)
 
         $SyncHash.FormWfa.Child = $SyncHash.Chart
-        #$SyncHash.Form.controls.add($SyncHash.Chart)
-        #$SyncHash.Form.Invoke([action]{$SyncHash.Form.controls.add($SyncHash.Chart)})
 
         $SyncHash.StartIperfButton.Add_Click({
                 Start-Iperf
@@ -541,16 +499,8 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                 Stop-Iperf
         })
 
-        #$SyncHash.StartAnalyzerButton.Add_Click({
-        #        Start-Analyzer
-        #})
-
-        #$SyncHash.StopAnalyzerButton.Add_Click({
-        #        Stop-Analyzer
-        #})
-
-        #$SyncHash.IpTextBox.Text = '192.168.178.35'
         $SyncHash.TimeTextBox.Text = 15
+		$SyncHash.label1.Text = 0
 
         $SyncHash.IpTextBox.add_TextChanged({
                 Set-IperfCommand
@@ -601,52 +551,18 @@ $UiPowerShell = [PowerShell]::Create().AddScript(
                 $SyncHash.CsvFilePathTextBox.Text = $CsvSaveFileDialog.FileName
         })
 
-        #$SyncHash.MaxScaleTextBox.IsEnabled = $false
-        #$SyncHash.MaxScaleTextBox.Text = 100
-        #$SyncHash.MaxScaleTextBox.add_TextChanged({
-        #        $SyncHash.Chart.ChartAreas[0].Axisy.Maximum = $SyncHash.MaxScaleTextBox.Text
-        #})
-
-        #$SyncHash.MaxScaleCheckBox.add_Checked({
-        #        $SyncHash.MaxScaleTextBox.IsEnabled = $false
-        #        $SyncHash.Chart.ChartAreas[0].Axisy.Maximum = 'NaN'
-        #})
-
-        #$SyncHash.MaxScaleCheckBox.add_Unchecked({
-        #        $SyncHash.MaxScaleTextBox.IsEnabled = $true
-        #        $SyncHash.Chart.ChartAreas[0].Axisy.Maximum = $SyncHash.MaxScaleTextBox.Text
-        #})
-
-        #$SyncHash.LastXTextBox.Text = 0
-        #$SyncHash.LastXTextBox.add_TextChanged({
-
-        #})
-
         Set-IperfCommand
 
-        Write-Status -Text 'SeWiSpeed v2.1.0 beta3' -Colore 'Blue'
+        Write-Status -Text 'SeWiSpeed v2.2.0 - Copyright: Patrick Hachmeyer' -Colore 'Blue'
 
         # Shows the form
         $null = $SyncHash.Form.ShowDialog()
 
-        # Clean
-        #$SyncHash.host.ui.WriteVerboseLine('Stop-Iperf End')
         Stop-Iperf
-
-        #$SyncHash.host.ui.WriteVerboseLine('Stop-Analyzer End')
         Stop-Analyzer
 
-        #$SyncHash.Error = $Error
     }
 )
 
 $UiPowerShell.Runspace = $UiRunspace
 $UiHandle = $UiPowerShell.BeginInvoke()
-#$UiPowerShell.EndInvoke($UiHandle)
-#$SyncHash.Error
-#$UiPowerShell.Streams
-
-#$SyncHash.AnalyzerPowerShell.Streams
-#$SyncHash.AnalyzerPowerShell.EndInvoke($handle)
-
-#[void][System.Windows.Forms.MessageBox]::Show("2","1")
