@@ -8,3 +8,6 @@ SeWiSpeed ist ein Speedtest basierend auf iPerf und iPerf3, visualisiert mit PPe
 * Live-Anzeige der aktuellen Bandbreite
 * Auswahl aus Download und Upload-Tests
 * Verschiedene Server stehen zur Auswahl
+
+## Systemanforderungen ##
+* Windows 10 mit Powershell v5
